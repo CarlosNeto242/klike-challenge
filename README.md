@@ -119,30 +119,12 @@ O notebook traz diversos gráficos. Entretanto, acredito que 3 deles merecem des
 
 ### 2.1 Feature Engineering
 
+Para a primeira etapa, queria descobrir quais variáveis de fato afetam o `klike_score`. Para isso, utilizei um modelo de regressão linear (OLS) para identificar as variáveis mais relevantes. Além disso, vale ressaltar que não coloquei nenhuma métrica de sucesso para análise justamente por elas só poderem ser medidas depois que o criativo circulou por um tempo.
+
 - **Features utilizadas:** apenas variáveis conhecidas **antes da veiculação**: atributos do criativo (`has_hook`, `has_face`, `has_cta`, `has_subtitle`, `text_density`, `format`, `video_duration_s`, `music_voice_ratio`) e contexto (`platform`, `category`, `objective`, `target_audience_age`, `is_retargeting`).
-- **Features excluídas:** métricas de performance (CTR, ROAS, engajamento etc.). Elas só existem após o anúncio rodar; usá-las tornaria o modelo inútil para avaliar um criativo novo (e introduziria vazamento de informação).
 - **Encoding:** *one-hot* (`drop_first=True`) para categóricas; nulos imputados pela mediana.
 - **Nova feature:** `watch_ratio = avg_watch_time_s / video_duration_s` (limitada a 100%), a fração do vídeo efetivamente assistida, que normaliza a retenção pela duração. Por ser uma métrica pós-veiculação, não entra no modelo do score, mas é usada no engine para quantificar o impacto em retenção.
-- **Diagnóstico com OLS:** uma regressão linear (statsmodels) foi usada para inspecionar significância estatística e sinal de cada variável antes da modelagem final (R² ajustado = 71%).
-
-### 2.2 Modelos
-
-Divisão **80% treino / 20% teste** (`random_state=42`). Foram comparados:
-- **Ridge Regression:** modelo linear com regularização, interpretável e robusto a variáveis pouco informativas;
-- **Random Forest:** modelo não linear, capaz de capturar interações.
-
-### 2.3 Avaliação (conjunto de teste)
-
-| Modelo | R² | MAE | RMSE |
-|---|:---:|:---:|:---:|
-| **Ridge Regression** | **66,6%** | **6,73 pts** | **8,69 pts** |
-| Random Forest | 51,1% | 8,53 pts | 10,51 pts |
-
-O **Ridge foi escolhido**. Em uma escala de 0 a 100, ele erra em média **~7 pontos** ao avaliar um criativo que nunca viu, e explica dois terços da variação do score usando apenas informações de produção e canal. O fato de o modelo linear superar a floresta sugere que o `klike_score` se comporta como um **sistema aditivo**: cada boa prática soma pontos de forma relativamente independente.
-
-### 2.4 Feature Importance
-
-Pelos coeficientes do modelo linear (efeito em pontos de score, mantendo o resto constante):
+- **Resultado com OLS:** 
 
 | Variável | Efeito no score |
 |---|---|
@@ -158,6 +140,25 @@ Pelos coeficientes do modelo linear (efeito em pontos de score, mantendo o resto
 
 **Faz sentido para o negócio?** Sim. Em feeds de rolagem infinita, a atenção é o recurso mais escasso: um anúncio que não prende nos primeiros 3 segundos (hook) e não gera identificação humana (rosto) é ignorado. Texto em excesso compete com o vídeo, e legendas atendem quem assiste sem som.
 
+### 2.2 Modelos
+
+Com as variáveis relevantes em mão, pude começar a construção do modelo. No meu caso, testei 2 tipos diferentes: 
+
+- **Ridge Regression:** modelo linear com regularização, interpretável e robusto a variáveis pouco informativas;
+- **Random Forest:** modelo não linear, capaz de capturar interações.o 
+
+Para ambos, utilizei a biblioteca `scikit-learn` e a divisão **80% treino / 20% teste**
+
+### 2.3 Avaliação (conjunto de teste)
+
+| Modelo | R² | MAE | RMSE |
+|---|:---:|:---:|:---:|
+| **Ridge Regression** | **66,6%** | **6,73 pts** | **8,69 pts** |
+| Random Forest | 51,1% | 8,53 pts | 10,51 pts |
+
+O **Ridge foi escolhido**. Em uma escala de 0 a 100, ele erra em média **~7 pontos** ao avaliar um criativo que nunca viu, e explica dois terços da variação do score usando apenas informações de produção e canal.
+
+
 ---
 
 ## 3. Recommendations Engine
@@ -166,8 +167,8 @@ Implementado como função Python (`generate_creative_recommendations`) no noteb
 
 **Como funciona (simulação contrafactual, "e se?"):**
 1. **Score atual:** o modelo Ridge estima o score do criativo como ele está.
-2. **Simulação de alavancas:** para cada boa prática ausente (hook, rosto, CTA, legendas, densidade de texto → `medium`), o criativo é alterado virtualmente e o modelo recalcula o score. A diferença é o **ganho estimado em pontos**.
-3. **Contexto por plataforma:** o impacto em métricas de negócio (retenção/`watch_ratio`, CTR, engajamento e ROAS) é calculado comparando criativos **da mesma plataforma** com e sem o atributo no histórico.
+2. **Simulação de alavancas:** para cada boa prática ausente (hook, rosto, CTA, legendas, densidade de texto → `medium`), o criativo estima a diferença em pontos caso aquela boa prática fosse realizada.
+3. **Contexto por plataforma:** Utilizando a função `get_kpi_impact_lift`, o impacto em métricas de negócio (retenção/`watch_ratio`, CTR, engajamento e ROAS) é calculado comparando criativos **da mesma plataforma** com e sem o atributo no histórico.
 4. **Priorização:** recomendações ordenadas pelo ganho estimado de score.
 
 **Exemplo de saída:**
@@ -208,10 +209,10 @@ Para entregar valor imediato às equipes de marketing, criação e tráfego pago
 
 1. Desenvolvimento de um site web utilizando o framework Django
 2. Criando uma página dentro desse site contendo os campos de texto que o usuário poderá adicionar 
-3. Por conta de Django funcionar com o python. Ao entrar na rota e executar um POST, criaríamos uma função para a rota da página, função que poderíamos simplesmente pegar o request.POST para obter cada campo que o usuário preencheu 
+3. Por conta de Django funcionar com o python, ao entrar na rota e executar um POST, criaríamos uma função para a rota da página, função que poderíamos simplesmente pegar o request.POST para obter cada campo que o usuário preencheu 
 4. Com isso, pegaríamos cada campo e passaríamos ele como argumento na nossa função.
 5. Renderizamos a mesma página, só que agora passamos para o HTML as respostas (`return render(request, "pagina.html", {'respostas': all_respostas})`)
-6. Com o site criado, poderíamos finalmente dar deploy nele usando algum serviço para isso. Eu escolheria o Render para isso
+6. Com o site criado, poderíamos finalmente dar deploy nele usando algum serviço para isso. Eu usaria o Render por possuir maior familiaridade
 
 
 ### 4.3. O que faria com mais tempo e mais dados?
