@@ -99,7 +99,15 @@ Para as atributos numéricas, foi utilizado a função `.corr()` do pandas, assi
 
 ### 1.3 Padrões por Plataforma
 
-Para ver o que funciona para cada plataforma, analisei os criativos *top performers* (`klike_score ≥ 70`) de cada plataforma. Com isso, chegou-se a conclusão que, de fato, cada plataforma se comporta de uma forma diferente (mais detalhes sobre números, olhar o Notebook)
+Para ver o que funciona para cada plataforma, analisei os criativos *top performers* (`klike_score ≥ 70`) de cada plataforma. Com isso, chegou-se a conclusão que, de fato, cada plataforma se comporta de uma forma diferente:
+
+| Atributo / Métrica | TikTok (Mobile & Dinâmico) | Meta (Híbrido Feed/Reels) | LinkedIn (B2B & Desktop) |
+| :--- | :---: | :---: | :---: |
+| **Duração Ideal (Mediana)** | **~13.0 segundos** | **~15.5 a 16.0 segundos** | **~24.5 segundos** (quase o dobro) |
+| **Retenção Média Assistida** | **9.0s** (atenção efêmera) | **11.4s** (intermediária) | **19.8s** (alta tolerância B2B) |
+| **Formatos Dominantes** | **90% Vertical** (0% Horizontal) | **73% Vertical** / 23% Quadrado | **62% Horizontal** / 31% Quadrado |
+| **Presença de Gancho (Hook 3s)** | **81%** (essencial para reter feed) | **93%** (quase mandatório) | **87%** (necessário para parar o scroll) |
+|...|...|...|...|
 
 **Implicação para o engine:** recomendações não podem ser genéricas. Encurtar um vídeo para 15s é ótimo no TikTok, mas prejudicial no LinkedIn, onde formatos explicativos performam melhor.
 
@@ -165,10 +173,10 @@ O **Ridge foi escolhido**. Em uma escala de 0 a 100, ele erra em média **~7 pon
 
 Implementado como função Python (`generate_creative_recommendations`) no notebook de modelagem. Recebe **uma linha do dataset** e retorna as **top 3 recomendações** ordenadas por impacto.
 
-**Como funciona (simulação contrafactual, "e se?"):**
+**Como funciona (simulação "e se?"):**
 1. **Score atual:** o modelo Ridge estima o score do criativo como ele está.
 2. **Simulação de alavancas:** para cada boa prática ausente (hook, rosto, CTA, legendas, densidade de texto → `medium`), o criativo estima a diferença em pontos caso aquela boa prática fosse realizada.
-3. **Contexto por plataforma:** Utilizando a função `get_kpi_impact_lift`, o impacto em métricas de negócio (retenção/`watch_ratio`, CTR, engajamento e ROAS) é calculado comparando criativos **da mesma plataforma** com e sem o atributo no histórico.
+3. **Contexto por plataforma:** Utilizando a função `get_kpi_impact_lift`, o impacto em métricas de negócio (retenção/`watch_ratio`, CTR, engajamento e ROAS) é calculado comparando criativos **da mesma plataforma** com e sem o atributo no histórico. Nesse caso, comparamos a média de uma determinada métrica quando aquele boa prática está presente ou não.
 4. **Priorização:** recomendações ordenadas pelo ganho estimado de score.
 
 **Exemplo de saída:**
@@ -181,7 +189,7 @@ Implementado como função Python (`generate_creative_recommendations`) no noteb
       • ROAS Estimado:          +0.99x
 ```
 
-**Limitações conhecidas:** as estimativas vêm de padrões observacionais (correlação, não causalidade), e o ganho de score do modelo linear é o mesmo em todas as plataformas. A contextualização vem dos benchmarks de KPI por plataforma. Grupos pequenos (ex.: LinkedIn, 83 campanhas) geram estimativas menos estáveis.
+**Limitações conhecidas:** as estimativas vêm de padrões observacionais (correlação, não causalidade), e o ganho de score do modelo linear é bem padronizado entre as plataformas, não permitindo fazer análises muito desenvolvidas. Além disso, grupos pequenos (ex.: LinkedIn, 83 campanhas) geram estimativas menos estáveis.
 
 ---
 
