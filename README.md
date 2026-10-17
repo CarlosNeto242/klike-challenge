@@ -159,10 +159,10 @@ Para ambos, utilizei a biblioteca `scikit-learn` e a divisão **80% treino / 20%
 
 ### 2.3 Avaliação (conjunto de teste)
 
-| Modelo | R² | MAE | RMSE |
-|---|:---:|:---:|:---:|
-| **Ridge Regression** | **66,6%** | **6,73 pts** | **8,69 pts** |
-| Random Forest | 51,1% | 8,53 pts | 10,51 pts |
+| Modelo | $R^2$ (Poder Explicativo) | MAE (Erro Médio) | RMSE (Penalidade de Erro) |
+| :--- | :---: | :---: | :---: |
+| **Ridge Regression (Linear)** | **64.6%** | **7.00 pts** | **8.95 pts** |
+| **Random Forest Regressor** | **54.6%** | **8.11 pts** | **10.13 pts** |
 
 O **Ridge foi escolhido**. Em uma escala de 0 a 100, ele erra em média **~7 pontos** ao avaliar um criativo que nunca viu, e explica dois terços da variação do score usando apenas informações de produção e canal.
 
@@ -217,9 +217,9 @@ Para entregar valor imediato às equipes de marketing, criação e tráfego pago
 
 1. Desenvolvimento de um site web utilizando o framework Django
 2. Criando uma página dentro desse site contendo os campos de texto que o usuário poderá adicionar 
-3. Por conta de Django funcionar com o python, ao entrar na rota e executar um POST, criaríamos uma função para a rota da página, função que poderíamos simplesmente pegar o request.POST para obter cada campo que o usuário preencheu 
-4. Com isso, pegaríamos cada campo e passaríamos ele como argumento na nossa função.
-5. Renderizamos a mesma página, só que agora passamos para o HTML as respostas (`return render(request, "pagina.html", {'respostas': all_respostas})`)
+3. Ao entrar na rota do site para colocar as características do vídeo e executar um POST, criaríamos uma função para a rota da página, função que poderíamos simplesmente pegar o request.POST para obter cada campo que o usuário preencheu 
+4. Com isso, pegaríamos cada campo e passaríamos ele como argumento na nossa função (Django tem compatibilidade com Python).
+5. Com a resposta da nossa função, renderizamos a mesma página, só que agora passamos para o HTML essa resposta (`return render(request, "pagina.html", {'respostas': all_respostas})`)
 6. Com o site criado, poderíamos finalmente dar deploy nele usando algum serviço para isso. Eu usaria o Render por possuir maior familiaridade
 
 
