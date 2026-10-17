@@ -24,7 +24,7 @@ Solução do desafio de Data Science da **Millai / Klike**: análise exploratór
 ```powershell
 # 1. Clonar o repositório
 git clone https://github.com/CarlosNeto242/klike-challenge.git
-cd klike-challenge
+cd caminho/do/diretório
 
 # 2. Criar e ativar o ambiente virtual. Digite no PowerShell:
 python -m venv .venv
